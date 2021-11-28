@@ -8,7 +8,6 @@
 #include <random>
 
 #include "Table.h"
-#include "Utilites.h"
 
 class SudokuEngine : public Table
 {
@@ -52,6 +51,7 @@ class SudokuEngine : public Table
 
         return true;
     }
+
     uint8_t findCellValue(uint8_t col, uint8_t row, uint8_t value)
     {
         if (((UNIQVALS <= col) && (UNIQVALS <= row)) || (UNIQVALS < value))
@@ -64,86 +64,95 @@ class SudokuEngine : public Table
         }
         return findCellValue(col, row, value + 1);
     };
+
     void solve()
     {
         bool backtrack = false;
-        std::function<bool(uint8_t, uint8_t, uint8_t, uint64_t)> findSolution;
-        findSolution = [this, &backtrack, &findSolution](uint8_t col, uint8_t row, uint8_t value, uint64_t recursionLevel){
-            auto lCol = col, lRow = row;
-            auto cellValue = 1;
+        std::function<bool(uint8_t, uint8_t, uint8_t, uint64_t&)> findSolution;
+        findSolution = [this, &backtrack, &findSolution](uint8_t col, uint8_t row, uint8_t value, uint64_t &recursionLevel){
 
-            //std::cout << "0. col:" << (int)lCol << " row:" << (int)lRow << " backtrack:" << backtrack << std::endl;
-            if ((UNIQVALS <= lCol) && (UNIQVALS - 1 <= lRow))
+//            auto lCol = col, lRow = row;
+//            auto cellValue = 1;
+            do
             {
-                return true;
-            }
-            if (UINT8_MAX <= lCol)
-            {
-                lRow -= 1;
-                lCol = UNIQVALS - 1;
-            }
-            if (UNIQVALS <= lCol)
-            {
-                lRow += 1;
-                lCol = 0;
-            }
+                auto lCol = col, lRow = row;
+                auto cellValue = 1;
 
-            //std::cout << "1. col:" << (int)lCol << " row:" << (int)lRow << " backtrack:" << backtrack << std::endl;
-            if (backtrack)
-            {
-                if (!cellAt(lCol, lRow)->isFixed())
+                //std::cout << "0. col:" << (int)lCol << " row:" << (int)lRow << " backtrack:" << backtrack << std::endl;
+                if ((UNIQVALS <= lCol) && (UNIQVALS - 1 <= lRow))
                 {
-                    /* If its value isn't fixed, stop */
-                    backtrack = false;
-                    if (!cellAt(lCol, lRow)->isClear())
-                        cellValue = getCellValueAt(lCol, lRow) + 1;
+                    return true;
+                }
+                if (UINT8_MAX <= lCol)
+                {
+                    lRow -= 1;
+                    lCol = UNIQVALS - 1;
+                }
+                if (UNIQVALS <= lCol)
+                {
+                    lRow += 1;
+                    lCol = 0;
+                }
+
+                //std::cout << "1. col:" << (int)lCol << " row:" << (int)lRow << " backtrack:" << backtrack << std::endl;
+                if (backtrack)
+                {
+                    if (!cellAt(lCol, lRow)->isFixed())
+                    {
+                        /* If its value isn't fixed, stop */
+                        backtrack = false;
+                        if (!cellAt(lCol, lRow)->isClear())
+                            cellValue = getCellValueAt(lCol, lRow) + 1;
+                        else
+                            cellValue = 1;
+                        clearCellAt(lCol, lRow);
+                    }
                     else
-                        cellValue = 1;
-                    clearCellAt(lCol, lRow);
+                    {
+                        /* Go back more */
+                        lCol -= 1;
+                    }
                 }
                 else
                 {
-                    /* Go back more */
-                    lCol -= 1;
-                }
-            }
-            else
-            {
-                /**/if ( (0u == (recursionLevel % 200)) && (0u != recursionLevel) )
-                {
-                    lCol -= 1;
-                    backtrack = true;
-                }
-                else if (!isCellFixedAt(lCol, lRow))
-                {
-                    cellValue = findCellValue(lCol, lRow, value);
-
-                    if (Cell::INVALID_VALUE != cellValue)
-                    {
-                        setCellValueAt(lCol, lRow, cellValue);
-                        lCol += 1;
-                    }
-                    else
+                    /**/if ( (0u == (recursionLevel % 200)) && (0u != recursionLevel) )
                     {
                         lCol -= 1;
                         backtrack = true;
                     }
-                    cellValue = 1;
-                }
-                else
-                {
-                    lCol += 1;
-                }
-            }
+                    else if (!isCellFixedAt(lCol, lRow))
+                    {
+                        cellValue = findCellValue(lCol, lRow, value);
 
-            //std::cout << "2. col:" << (int)lCol << " row:" << (int)lRow << " backtrack:" << backtrack << " val:" << (int)cellValue << std::endl;
-            std::cout << "Rec lvl: " << recursionLevel << std::endl;
-            return findSolution(lCol, lRow, cellValue, recursionLevel + 1);
+                        if (Cell::INVALID_VALUE != cellValue)
+                        {
+                            setCellValueAt(lCol, lRow, cellValue);
+                            lCol += 1;
+                        }
+                        else
+                        {
+                            lCol -= 1;
+                            backtrack = true;
+                        }
+                        cellValue = 1;
+                    }
+                    else
+                    {
+                        lCol += 1;
+                    }
+                }
+
+                //std::cout << "2. col:" << (int)lCol << " row:" << (int)lRow << " backtrack:" << backtrack << " val:" << (int)cellValue << std::endl;
+                //std::cout << "Rec lvl: " << recursionLevel << std::endl;
+                col = lCol, row = lRow, value = cellValue, recursionLevel += 1;
+            } while (true);
+            //return findSolution(lCol, lRow, cellValue, recursionLevel + 1);
         };
         try
         {
-            auto done = findSolution(0, 0, 1, 0);
-            std::cout << (done?"Done":"Sorry") << std::endl;
+            uint64_t recursions = 0;
+            auto done = findSolution(0, 0, 1, recursions);
+            std::cout << (done?"Done":"Sorry") << ", "+std::to_string(recursions) << std::endl;
         }
         catch (std::exception &e)
         {
@@ -151,6 +160,7 @@ class SudokuEngine : public Table
             std::cout << e.what() << std::endl;
         }
     }
+
     void print()
     {
         std::cout << "---" << std::endl;
@@ -158,19 +168,23 @@ class SudokuEngine : public Table
         {
             for (int j = 0; j < UNIQVALS; j++)
             {
-                std::cout << (int)getCellValueAt(j, i) << "\t";
+                auto val = (int)getCellValueAt(j, i);
+                auto str = "|" + std::to_string(val) + "|";
+                std::cout << (val==Cell::INVALID_VALUE ? "|_|" : str) << "\t";
             }
             std::cout << std::endl;
         }
         std::cout << "---" << std::endl;
     }
+
 public:
     SudokuEngine(){
-        //fillDiagonal();
-        print();
+        fillDiagonal();
+        //print();
         solve();
-        print();
+        //print();
     }
+
     SudokuEngine(const std::array<std::array<int, UNIQVALS>, UNIQVALS> & tst )
     {
         for (int row = 0; row < UNIQVALS; row++)
@@ -181,9 +195,9 @@ public:
                 setCellValueAt(col, row, tst.at(row).at(col), isFixed);
             }
         }
-        print();
+        //print();
         solve();
-        print();
+        //print();
     }
 };
 
