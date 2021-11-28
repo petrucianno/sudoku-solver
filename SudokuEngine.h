@@ -70,9 +70,6 @@ class SudokuEngine : public Table
         bool backtrack = false;
         std::function<bool(uint8_t, uint8_t, uint8_t, uint64_t&)> findSolution;
         findSolution = [this, &backtrack, &findSolution](uint8_t col, uint8_t row, uint8_t value, uint64_t &recursionLevel){
-
-//            auto lCol = col, lRow = row;
-//            auto cellValue = 1;
             do
             {
                 auto lCol = col, lRow = row;
@@ -146,8 +143,8 @@ class SudokuEngine : public Table
                 //std::cout << "Rec lvl: " << recursionLevel << std::endl;
                 col = lCol, row = lRow, value = cellValue, recursionLevel += 1;
             } while (true);
-            //return findSolution(lCol, lRow, cellValue, recursionLevel + 1);
         };
+
         try
         {
             uint64_t recursions = 0;
@@ -195,9 +192,9 @@ public:
                 setCellValueAt(col, row, tst.at(row).at(col), isFixed);
             }
         }
-        //print();
+        print();
         solve();
-        //print();
+        print();
     }
 };
 
